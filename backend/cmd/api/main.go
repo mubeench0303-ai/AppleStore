@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"apple-store-backend/internal/config"
@@ -32,7 +33,12 @@ func main() {
 
 	r := router.New(db, cfg)
 
-	addr := ":" + cfg.ServerPort
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.ServerPort
+	}
+
+	addr := ":" + port
 	log.Printf("Apple Store API listening on %s (env=%s)\n", addr, cfg.Env)
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("server failed: %v", err)
