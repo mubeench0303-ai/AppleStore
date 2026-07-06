@@ -25,6 +25,7 @@ type Config struct {
 	SMTPUsername        string
 	SMTPPassword        string
 	SMTPFrom            string
+	BrevoAPIKey         string
 }
 
 // Load reads environment variables (via .env if present) into a Config struct.
@@ -67,6 +68,7 @@ func Load() *Config {
 		SMTPUsername:        smtpUser,
 		SMTPPassword:        getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:            smtpFrom,
+		BrevoAPIKey:         getEnv("BREVO_API_KEY", ""),
 	}
 }
 

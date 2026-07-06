@@ -41,7 +41,7 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 	passwordResetRepo := repository.NewPasswordResetRepository(db)
 
 	// Services
-	emailService := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
+	emailService := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom, cfg.BrevoAPIKey)
 	authService := service.NewAuthService(userRepo, verificationRepo, passwordResetRepo, emailService, cfg.JWTSecret, cfg.JWTExpiryHours)
 	productService := service.NewProductService(productRepo, categoryRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)

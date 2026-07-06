@@ -89,17 +89,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = db.Exec(`INSERT IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')`,
+	_, err = db.Exec(`INSERT IGNORE INTO users (name, email, password_hash, role, is_verified) VALUES (?, ?, ?, 'admin', TRUE)`,
 		"Store Admin", "admin@applestore.dev", adminHash)
 	if err != nil {
 		log.Printf("skip admin user: %v", err)
 	}
 
 	demoHash, _ := utils.HashPassword("Demo@12345")
-	_, err = db.Exec(`INSERT IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'user')`,
+	_, err = db.Exec(`INSERT IGNORE INTO users (name, email, password_hash, role, is_verified) VALUES (?, ?, ?, 'user', TRUE)`,
 		"Demo Customer", "demo@applestore.dev", demoHash)
 	if err != nil {
 		log.Printf("skip demo user: %v", err)
+	}
+
+	if _, err := db.Exec(`UPDATE users SET is_verified = TRUE WHERE email IN ('admin@applestore.dev', 'demo@applestore.dev')`); err != nil {
+		log.Printf("verify seed users: %v", err)
 	}
 
 	log.Println("seed complete.")
