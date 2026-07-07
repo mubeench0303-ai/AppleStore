@@ -68,13 +68,14 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public auth
 		r.Post("/auth/register", authHandler.Register)
-		r.Post("/auth/verify-email", authHandler.VerifyEmail)
-		r.Post("/auth/resend-code", authHandler.ResendCode)
-		r.Post("/auth/forgot-password", authHandler.ForgotPassword)
-		r.Post("/auth/verify-reset-code", authHandler.VerifyResetCode)
-		r.Post("/auth/reset-password", authHandler.ResetPassword)
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/logout", authHandler.Logout)
+		// Email verification & password reset disabled while Brevo delivery is unavailable.
+		// r.Post("/auth/verify-email", authHandler.VerifyEmail)
+		// r.Post("/auth/resend-code", authHandler.ResendCode)
+		// r.Post("/auth/forgot-password", authHandler.ForgotPassword)
+		// r.Post("/auth/verify-reset-code", authHandler.VerifyResetCode)
+		// r.Post("/auth/reset-password", authHandler.ResetPassword)
 
 		// Public catalog
 		r.Get("/products", productHandler.List)

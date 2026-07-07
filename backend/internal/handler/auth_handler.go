@@ -61,14 +61,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	user, message, err := h.Auth.Register(req.Name, req.Email, req.Password)
+	user, token, message, err := h.Auth.Register(req.Name, req.Email, req.Password)
 	if err != nil {
 		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	h.setAuthCookie(w, token)
 	utils.Success(w, http.StatusCreated, map[string]interface{}{
 		"message": message,
 		"email":   user.Email,
+		"user":    user,
+		"token":   token,
 	})
 }
 

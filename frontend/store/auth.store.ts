@@ -12,7 +12,7 @@ interface AuthState {
   isLoading: boolean;
   isHydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<{ email: string; message: string }>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -57,8 +57,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (name, email, password) => {
     set({ isLoading: true });
     try {
-      const res = await authService.register(name, email, password);
-      return { email: res.email, message: res.message };
+      const { user, token } = await authService.register(name, email, password);
+      if (!token) {
+        throw new Error("Registration succeeded but no session token was returned");
+      }
+      setAccessToken(token);
+      syncAuthCookie(user);
+      set({ user });
     } finally {
       set({ isLoading: false });
     }

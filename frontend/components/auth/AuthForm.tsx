@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/auth.store";
-import { APIError } from "@/lib/api-client";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [name, setName] = useState("");
@@ -39,16 +38,11 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         toast.success("Welcome back");
         router.push(redirect);
       } else {
-        const res = await register(name, email, password);
-        toast.success(res.message);
-        router.push(`/verify-email?email=${encodeURIComponent(res.email)}`);
+        await register(name, email, password);
+        toast.success("Account created — welcome!");
+        router.push(redirect);
       }
     } catch (err) {
-      if (mode === "login" && err instanceof APIError && err.status === 403) {
-        toast.error("Please verify your email first");
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        return;
-      }
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -97,17 +91,6 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
             placeholder="••••••••"
           />
         </Field>
-
-        {mode === "login" && (
-          <div className="text-right -mt-1">
-            <Link
-              href="/forgot-password"
-              className="text-[13px] text-accent font-medium hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-        )}
 
         <motion.button
           whileTap={{ scale: 0.98 }}

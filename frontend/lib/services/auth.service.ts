@@ -3,7 +3,7 @@ import type { User } from "@/types";
 
 export const authService = {
   register(name: string, email: string, password: string) {
-    return apiFetch<{ message: string; email: string }>("/auth/register", {
+    return apiFetch<{ message: string; email: string; user: User; token: string }>("/auth/register", {
       method: "POST",
       body: JSON.stringify({ name, email, password }),
     });
