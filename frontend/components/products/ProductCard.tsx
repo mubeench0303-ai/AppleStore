@@ -118,9 +118,9 @@ export default function ProductCard({
             onClick={handleAdd}
             disabled={product.stock_quantity === 0}
             aria-label={`Add ${product.name} to bag`}
-            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 z-10"
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white dark:bg-card border border-border/60 dark:border-border shadow-soft dark:shadow-card flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 z-10 hover:bg-surface dark:hover:bg-surface"
           >
-            <Plus size={18} className="text-ink" />
+            <Plus size={18} className="text-darksoft dark:text-ink" />
           </motion.button>
         </motion.div>
         <div className="px-1">
