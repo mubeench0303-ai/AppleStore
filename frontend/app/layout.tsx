@@ -4,12 +4,11 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import TrustBar from "@/components/layout/TrustBar";
 import Footer from "@/components/layout/Footer";
-import CartDrawer from "@/components/cart/CartDrawer";
 import ToastProvider from "@/components/ui/ToastProvider";
 import AppHydrator from "@/components/layout/AppHydrator";
 import FlyToCartProvider from "@/components/motion/FlyToCartProvider";
-import ScrollProgress from "@/components/motion/ScrollProgress";
 import ThemeProvider from "@/components/theme/ThemeProvider";
+import DeferredLayoutClient from "@/components/layout/DeferredLayoutClient";
 
 const interTight = Inter_Tight({
   subsets: ["latin"],
@@ -37,11 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body bg-background text-ink antialiased min-h-screen flex flex-col">
         <ThemeProvider>
           <FlyToCartProvider>
-            <ScrollProgress />
+            <DeferredLayoutClient />
             <AppHydrator />
             <TrustBar />
             <Navbar />
-            <CartDrawer />
             <main className="flex-1">{children}</main>
             <Footer />
             <ToastProvider />

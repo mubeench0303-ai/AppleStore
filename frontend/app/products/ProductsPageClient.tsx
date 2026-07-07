@@ -10,10 +10,18 @@ import ProductGrid from "@/components/products/ProductGrid";
 import ProductFilters, { FiltersState } from "@/components/products/ProductFilters";
 import usePrefersReducedMotion from "@/hooks/usePrefersReducedMotion";
 
+function initialFiltersFromSlug(categories: Category[], categorySlug: string): FiltersState {
+  if (!categorySlug) return { sort: "newest" };
+  const match = categories.find((c) => c.slug === categorySlug);
+  return match ? { sort: "newest", categoryId: match.id } : { sort: "newest" };
+}
+
 export default function ProductsPageClient({
   initialCategories = [],
   initialProducts = [],
   initialPages = 1,
+  initialSearchQuery = "",
+  initialCategorySlug = "",
 }: {
   initialCategories?: Category[];
   initialProducts?: Product[];
@@ -30,7 +38,9 @@ export default function ProductsPageClient({
   const categorySlug = searchParams.get("category") || "";
 
   const hasInitialData = initialProducts.length > 0 || initialCategories.length > 0;
-  const skipInitialLoad = useRef(hasInitialData);
+  const ssrMatchesUrl =
+    initialSearchQuery === searchQuery && initialCategorySlug === categorySlug;
+  const skipInitialLoad = useRef(hasInitialData && ssrMatchesUrl);
   const pageRef = useRef<HTMLDivElement>(null);
 
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -38,8 +48,10 @@ export default function ProductsPageClient({
   const [isLoading, setIsLoading] = useState(!hasInitialData);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(initialPages);
-  const [filters, setFilters] = useState<FiltersState>({ sort: "newest" });
-  const [searchInput, setSearchInput] = useState(searchQuery);
+  const [filters, setFilters] = useState<FiltersState>(() =>
+    initialFiltersFromSlug(initialCategories, initialCategorySlug)
+  );
+  const [searchInput, setSearchInput] = useState(initialSearchQuery || searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { scrollYProgress } = useScroll({
@@ -67,7 +79,9 @@ export default function ProductsPageClient({
       return;
     }
     const match = categories.find((c) => c.slug === categorySlug);
-    if (match) setFilters((f) => ({ ...f, categoryId: match.id }));
+    if (match) {
+      setFilters((f) => (f.categoryId === match.id ? f : { ...f, categoryId: match.id }));
+    }
   }, [categorySlug, categories]);
 
   const updateUrl = useCallback(
