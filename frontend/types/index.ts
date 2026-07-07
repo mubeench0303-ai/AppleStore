@@ -78,6 +78,8 @@ export interface OrderItem {
   unit_price_snapshot: number;
   subtotal: number;
   product_image?: string;
+  can_review?: boolean;
+  has_reviewed?: boolean;
 }
 
 export interface Order {

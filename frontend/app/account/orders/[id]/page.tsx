@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import type { Order } from "@/types";
 import { orderService } from "@/lib/services/order.service";
+import OrderItemReviewForm from "@/components/reviews/OrderItemReviewForm";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -13,25 +15,26 @@ export default function OrderDetailPage() {
   const confirmed = searchParams.get("confirmed");
   const [order, setOrder] = useState<Order | null>(null);
 
-  useEffect(() => {
-    const id = Number(params.id);
+  const id = Number(params.id);
+
+  async function loadOrder() {
     if (!id) return;
-
-    async function load() {
-      try {
-        if (confirmed === "1") {
-          const synced = await orderService.confirmPayment(id);
-          setOrder(synced);
-          return;
-        }
-        const data = await orderService.getOne(id);
-        setOrder(data);
-      } catch {
-        setOrder(null);
+    try {
+      if (confirmed === "1") {
+        const synced = await orderService.confirmPayment(id);
+        setOrder(synced);
+        return;
       }
+      const data = await orderService.getOne(id);
+      setOrder(data);
+    } catch {
+      setOrder(null);
     }
+  }
 
-    load();
+  useEffect(() => {
+    loadOrder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, confirmed]);
 
   if (!order) {
@@ -59,11 +62,32 @@ export default function OrderDetailPage() {
 
       <ul className="divide-y divide-border">
         {order.items?.map((item) => (
-          <li key={item.id} className="flex justify-between py-4 text-[14px]">
-            <span>
-              {item.product_name_snapshot} × {item.quantity}
-            </span>
-            <span className="font-medium">${item.subtotal.toFixed(2)}</span>
+          <li key={item.id} className="py-4">
+            <div className="flex justify-between text-[14px]">
+              <span>
+                {item.product_name_snapshot} × {item.quantity}
+              </span>
+              <span className="font-medium">${item.subtotal.toFixed(2)}</span>
+            </div>
+
+            {item.has_reviewed && (
+              <p className="text-[12px] text-muted mt-2">You reviewed this product</p>
+            )}
+
+            {item.can_review && (
+              <OrderItemReviewForm
+                orderId={order.id}
+                productId={item.product_id}
+                productName={item.product_name_snapshot}
+                onSubmitted={loadOrder}
+              />
+            )}
+
+            {order.status !== "delivered" && !item.has_reviewed && (
+              <p className="text-[12px] text-muted mt-2">
+                Reviews unlock after delivery
+              </p>
+            )}
           </li>
         ))}
       </ul>
@@ -72,6 +96,10 @@ export default function OrderDetailPage() {
         <span>Total</span>
         <span>${order.total_amount.toFixed(2)}</span>
       </div>
+
+      <Link href="/account/orders" className="inline-block text-accent text-sm font-medium hover:underline mt-8">
+        ← Back to orders
+      </Link>
     </motion.div>
   );
 }

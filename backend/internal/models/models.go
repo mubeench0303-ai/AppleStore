@@ -116,12 +116,15 @@ type OrderItem struct {
 	UnitPriceSnapshot   float64 `json:"unit_price_snapshot"`
 	Subtotal            float64 `json:"subtotal"`
 	ProductImage        string  `json:"product_image,omitempty"`
+	CanReview           bool    `json:"can_review,omitempty"`
+	HasReviewed         bool    `json:"has_reviewed,omitempty"`
 }
 
 type Review struct {
 	ID        uint      `json:"id"`
 	ProductID uint      `json:"product_id"`
 	UserID    uint      `json:"user_id"`
+	OrderID   uint      `json:"order_id,omitempty"`
 	UserName  string    `json:"user_name,omitempty"`
 	Rating    int       `json:"rating"`
 	Comment   string    `json:"comment"`

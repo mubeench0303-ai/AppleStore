@@ -47,15 +47,16 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 	cartService := service.NewCartService(cartRepo, productRepo)
 	orderService := service.NewOrderService(db, orderRepo, cartRepo, productRepo)
 	paymentService := service.NewPaymentService(cfg.StripeSecretKey, orderRepo)
+	reviewService := service.NewReviewService(reviewRepo)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService, cfg.Env == "production")
 	productHandler := handler.NewProductHandler(productService)
 	categoryHandler := handler.NewCategoryHandler(categoryRepo)
 	cartHandler := handler.NewCartHandler(cartService)
-	orderHandler := handler.NewOrderHandler(orderService, paymentService, cfg.StripeWebhookSecret)
+	orderHandler := handler.NewOrderHandler(orderService, paymentService, reviewService, cfg.StripeWebhookSecret)
 	addressHandler := handler.NewAddressHandler(addressRepo)
-	reviewHandler := handler.NewReviewHandler(reviewRepo)
+	reviewHandler := handler.NewReviewHandler(reviewService)
 	userHandler := handler.NewUserHandler(userRepo, authService)
 
 	auth := middleware.Auth(cfg.JWTSecret)

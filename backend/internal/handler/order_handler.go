@@ -17,13 +17,14 @@ import (
 )
 
 type OrderHandler struct {
-	Orders          *service.OrderService
-	Payments        *service.PaymentService
-	WebhookSecret   string
+	Orders        *service.OrderService
+	Payments      *service.PaymentService
+	Reviews       *service.ReviewService
+	WebhookSecret string
 }
 
-func NewOrderHandler(o *service.OrderService, p *service.PaymentService, webhookSecret string) *OrderHandler {
-	return &OrderHandler{Orders: o, Payments: p, WebhookSecret: webhookSecret}
+func NewOrderHandler(o *service.OrderService, p *service.PaymentService, reviews *service.ReviewService, webhookSecret string) *OrderHandler {
+	return &OrderHandler{Orders: o, Payments: p, Reviews: reviews, WebhookSecret: webhookSecret}
 }
 
 type checkoutRequest struct {
@@ -93,6 +94,9 @@ func (h *OrderHandler) GetOne(w http.ResponseWriter, r *http.Request) {
 	if order.UserID != userID && role != "admin" {
 		utils.Error(w, http.StatusForbidden, "not allowed to view this order")
 		return
+	}
+	if order.UserID == userID && h.Reviews != nil {
+		_ = h.Reviews.EnrichOrderForUser(order, userID)
 	}
 	utils.Success(w, http.StatusOK, order)
 }

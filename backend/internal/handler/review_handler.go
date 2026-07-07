@@ -2,23 +2,23 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"apple-store-backend/internal/middleware"
-	"apple-store-backend/internal/models"
-	"apple-store-backend/internal/repository"
+	"apple-store-backend/internal/service"
 	"apple-store-backend/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type ReviewHandler struct {
-	Reviews *repository.ReviewRepository
+	Reviews *service.ReviewService
 }
 
-func NewReviewHandler(r *repository.ReviewRepository) *ReviewHandler {
-	return &ReviewHandler{Reviews: r}
+func NewReviewHandler(reviews *service.ReviewService) *ReviewHandler {
+	return &ReviewHandler{Reviews: reviews}
 }
 
 func (h *ReviewHandler) ListByProduct(w http.ResponseWriter, r *http.Request) {
@@ -27,19 +27,17 @@ func (h *ReviewHandler) ListByProduct(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
-	reviews, err := h.Reviews.FindByProduct(uint(productID))
+	reviews, err := h.Reviews.ListByProduct(uint(productID))
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, "failed to load reviews")
 		return
-	}
-	if reviews == nil {
-		reviews = []models.Review{}
 	}
 	utils.Success(w, http.StatusOK, reviews)
 }
 
 type createReviewRequest struct {
 	ProductID uint   `json:"product_id"`
+	OrderID   uint   `json:"order_id"`
 	Rating    int    `json:"rating"`
 	Comment   string `json:"comment"`
 }
@@ -51,16 +49,19 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Rating < 1 || req.Rating > 5 {
-		utils.Error(w, http.StatusBadRequest, "rating must be between 1 and 5")
-		return
-	}
-	review := &models.Review{ProductID: req.ProductID, UserID: userID, Rating: req.Rating, Comment: req.Comment}
-	id, err := h.Reviews.Create(review)
+
+	review, err := h.Reviews.Create(userID, req.ProductID, req.OrderID, req.Rating, req.Comment)
 	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, "failed to save review")
+		switch {
+		case errors.Is(err, service.ErrReviewNotEligible):
+			utils.Error(w, http.StatusForbidden, err.Error())
+		case errors.Is(err, service.ErrReviewAlreadyExists):
+			utils.Error(w, http.StatusConflict, err.Error())
+		default:
+			utils.Error(w, http.StatusBadRequest, err.Error())
+		}
 		return
 	}
-	review.ID = id
+
 	utils.Success(w, http.StatusCreated, review)
 }

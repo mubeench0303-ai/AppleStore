@@ -39,13 +39,6 @@ export const productService = {
     return apiFetch<Review[]>(`/products/${productId}/reviews`, opts);
   },
 
-  addReview(productId: number, rating: number, comment: string) {
-    return apiFetch<Review>("/reviews", {
-      method: "POST",
-      body: JSON.stringify({ product_id: productId, rating, comment }),
-    });
-  },
-
   // --- Admin ---
   adminList(page = 1, pageSize = 50) {
     return apiFetchWithMeta<Product[]>(`/admin/products?page=${page}&page_size=${pageSize}`);
