@@ -4,6 +4,7 @@ import { create } from "zustand";
 import Cookies from "js-cookie";
 import type { User } from "@/types";
 import { authService } from "@/lib/services/auth.service";
+import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
 
 interface AuthState {
   user: User | null;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isHydrated: false,
 
   setUser: (user) => {
+    if (!user) clearAccessToken();
     syncAuthCookie(user);
     set({ user });
   },
@@ -39,7 +41,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const { user } = await authService.login(email, password);
+      const { user, token } = await authService.login(email, password);
+      setAccessToken(token);
       get().setUser(user);
     } finally {
       set({ isLoading: false });
@@ -59,7 +62,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyEmail: async (email, code) => {
     set({ isLoading: true });
     try {
-      const { user } = await authService.verifyEmail(email, code);
+      const { user, token } = await authService.verifyEmail(email, code);
+      setAccessToken(token);
       get().setUser(user);
     } finally {
       set({ isLoading: false });
@@ -72,6 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await authService.logout().catch(() => {});
+    clearAccessToken();
     get().setUser(null);
   },
 
@@ -80,6 +85,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authService.me();
       get().setUser(user);
     } catch {
+      clearAccessToken();
       get().setUser(null);
     } finally {
       set({ isHydrated: true });
