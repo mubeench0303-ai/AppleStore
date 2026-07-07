@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"gopkg.in/gomail.v2"
@@ -23,13 +24,26 @@ func NewEmailService(host string, port int, username, password, from, brevoAPIKe
 	if from == "" {
 		from = username
 	}
-	return &EmailService{
+	s := &EmailService{
 		Host:        host,
 		Port:        port,
 		Username:    username,
 		Password:    password,
 		From:        from,
 		BrevoAPIKey: brevoAPIKey,
+	}
+	s.logStartupConfig()
+	return s
+}
+
+func (s *EmailService) logStartupConfig() {
+	switch {
+	case s.BrevoAPIKey != "":
+		log.Printf("email: using Brevo API (from=%s, key_set=true)", s.From)
+	case s.Host != "" && s.Port > 0 && s.Username != "" && s.Password != "":
+		log.Printf("email: using SMTP fallback (host=%s:%d, from=%s)", s.Host, s.Port, s.From)
+	default:
+		log.Printf("email: not configured (from=%s, brevo_key_set=%t)", s.From, s.BrevoAPIKey != "")
 	}
 }
 
@@ -58,11 +72,14 @@ func (s *EmailService) SendPasswordResetCode(toEmail, name, code string) error {
 
 func (s *EmailService) send(toEmail, subject, html string) error {
 	if !s.configured() {
+		log.Printf("email: send blocked — service not configured (to=%s, subject=%q)", toEmail, subject)
 		return fmt.Errorf("email service is not configured")
 	}
 	if s.BrevoAPIKey != "" {
+		log.Printf("email: sending via Brevo API (to=%s, from=%s, subject=%q)", toEmail, s.From, subject)
 		return s.sendViaBrevo(toEmail, subject, html)
 	}
+	log.Printf("email: sending via SMTP (to=%s, host=%s:%d, subject=%q)", toEmail, s.Host, s.Port, subject)
 	return s.sendViaSMTP(toEmail, subject, html)
 }
 
@@ -75,8 +92,10 @@ func (s *EmailService) sendViaSMTP(toEmail, subject, html string) error {
 
 	dialer := gomail.NewDialer(s.Host, s.Port, s.Username, s.Password)
 	if err := dialer.DialAndSend(msg); err != nil {
+		log.Printf("email: SMTP failed (to=%s): %v", toEmail, err)
 		return fmt.Errorf("failed to send email: %w", err)
 	}
+	log.Printf("email: SMTP sent successfully (to=%s)", toEmail)
 	return nil
 }
 
@@ -103,14 +122,17 @@ func (s *EmailService) sendViaBrevo(toEmail, subject, html string) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
+		log.Printf("email: Brevo request failed (to=%s): %v", toEmail, err)
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 	defer res.Body.Close()
 
+	respBody, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		log.Printf("email: Brevo sent successfully (to=%s, status=%d, body=%s)", toEmail, res.StatusCode, string(respBody))
 		return nil
 	}
 
-	respBody, _ := io.ReadAll(res.Body)
+	log.Printf("email: Brevo rejected (to=%s, status=%d, body=%s)", toEmail, res.StatusCode, string(respBody))
 	return fmt.Errorf("failed to send email: brevo returned %d: %s", res.StatusCode, string(respBody))
 }
