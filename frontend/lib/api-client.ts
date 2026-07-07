@@ -11,8 +11,10 @@ export class APIError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
+export interface RequestOptions extends RequestInit {
   skipJson?: boolean;
+  /** Server-side only: cache public catalog responses at the Next.js layer. */
+  revalidate?: number;
 }
 
 function authHeaders(extra: HeadersInit = {}): HeadersInit {
@@ -24,17 +26,31 @@ function authHeaders(extra: HeadersInit = {}): HeadersInit {
   };
 }
 
+function buildFetchInit(options: RequestOptions): RequestInit {
+  const { revalidate, skipJson: _skipJson, headers, ...rest } = options;
+
+  if (typeof revalidate === "number" && typeof window === "undefined") {
+    return {
+      ...rest,
+      headers: authHeaders(headers),
+      next: { revalidate },
+    };
+  }
+
+  return {
+    ...rest,
+    credentials: "include",
+    headers: authHeaders(headers),
+    cache: options.cache ?? "no-store",
+  };
+}
+
 /**
  * Central fetch wrapper used by every service module. Never call fetch()
  * directly from a component — go through a service in /lib/services instead.
  */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: authHeaders(options.headers),
-    cache: options.cache ?? "no-store",
-  });
+  const res = await fetch(`${API_URL}${path}`, buildFetchInit(options));
 
   let body: APIResponse<T> | null = null;
   try {
@@ -54,12 +70,7 @@ export async function apiFetchWithMeta<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<{ data: T; meta: APIResponse<T>["meta"] }> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: authHeaders(options.headers),
-    cache: options.cache ?? "no-store",
-  });
+  const res = await fetch(`${API_URL}${path}`, buildFetchInit(options));
 
   const body: APIResponse<T> = await res.json();
 

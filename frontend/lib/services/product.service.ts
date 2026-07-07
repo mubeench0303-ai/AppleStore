@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchWithMeta } from "@/lib/api-client";
+import { apiFetch, apiFetchWithMeta, type RequestOptions } from "@/lib/api-client";
 import type { Product, Category, Review } from "@/types";
 
 export interface ProductQuery {
@@ -20,21 +20,23 @@ function toQueryString(q: ProductQuery) {
   return s ? `?${s}` : "";
 }
 
+type CatalogOpts = Pick<RequestOptions, "revalidate">;
+
 export const productService = {
-  list(query: ProductQuery = {}) {
-    return apiFetchWithMeta<Product[]>(`/products${toQueryString(query)}`);
+  list(query: ProductQuery = {}, opts?: CatalogOpts) {
+    return apiFetchWithMeta<Product[]>(`/products${toQueryString(query)}`, opts);
   },
 
-  getBySlug(slug: string) {
-    return apiFetch<{ product: Product; related: Product[] }>(`/products/${slug}`);
+  getBySlug(slug: string, opts?: CatalogOpts) {
+    return apiFetch<{ product: Product; related: Product[] }>(`/products/${slug}`, opts);
   },
 
-  categories() {
-    return apiFetch<Category[]>("/categories");
+  categories(opts?: CatalogOpts) {
+    return apiFetch<Category[]>("/categories", opts);
   },
 
-  reviews(productId: number) {
-    return apiFetch<Review[]>(`/products/${productId}/reviews`);
+  reviews(productId: number, opts?: CatalogOpts) {
+    return apiFetch<Review[]>(`/products/${productId}/reviews`, opts);
   },
 
   addReview(productId: number, rating: number, comment: string) {

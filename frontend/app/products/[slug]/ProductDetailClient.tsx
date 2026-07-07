@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -12,18 +12,36 @@ import { useCartStore } from "@/store/cart.store";
 import { useAuthStore } from "@/store/auth.store";
 import ProductGrid from "@/components/products/ProductGrid";
 
-export default function ProductDetailClient({ slug }: { slug: string }) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [related, setRelated] = useState<Product[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
+export default function ProductDetailClient({
+  slug,
+  initialProduct = null,
+  initialRelated = [],
+  initialReviews = [],
+}: {
+  slug: string;
+  initialProduct?: Product | null;
+  initialRelated?: Product[];
+  initialReviews?: Review[];
+}) {
+  const hasInitialData = !!initialProduct;
+  const skipInitialLoad = useRef(hasInitialData);
+
+  const [product, setProduct] = useState<Product | null>(initialProduct);
+  const [related, setRelated] = useState<Product[]>(initialRelated);
+  const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!hasInitialData);
   const addItem = useCartStore((s) => s.addItem);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
 
   useEffect(() => {
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false;
+      return;
+    }
+
     setIsLoading(true);
     productService
       .getBySlug(slug)

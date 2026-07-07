@@ -1,9 +1,11 @@
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, type RequestOptions } from "@/lib/api-client";
 import type { Category } from "@/types";
 
+type CatalogOpts = Pick<RequestOptions, "revalidate">;
+
 export const categoryService = {
-  list() {
-    return apiFetch<Category[]>("/categories");
+  list(opts?: CatalogOpts) {
+    return apiFetch<Category[]>("/categories", opts);
   },
   create(name: string) {
     return apiFetch<Category>("/admin/categories", {

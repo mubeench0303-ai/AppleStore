@@ -9,7 +9,17 @@ import { productService } from "@/lib/services/product.service";
 import ProductGrid from "@/components/products/ProductGrid";
 import ProductFilters, { FiltersState } from "@/components/products/ProductFilters";
 
-export default function ProductsPageClient() {
+export default function ProductsPageClient({
+  initialCategories = [],
+  initialProducts = [],
+  initialPages = 1,
+}: {
+  initialCategories?: Category[];
+  initialProducts?: Product[];
+  initialPages?: number;
+  initialSearchQuery?: string;
+  initialCategorySlug?: string;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -17,18 +27,22 @@ export default function ProductsPageClient() {
   const searchQuery = searchParams.get("search") || searchParams.get("q") || "";
   const categorySlug = searchParams.get("category") || "";
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const hasInitialData = initialProducts.length > 0 || initialCategories.length > 0;
+  const skipInitialLoad = useRef(hasInitialData);
+
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [isLoading, setIsLoading] = useState(!hasInitialData);
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
+  const [pages, setPages] = useState(initialPages);
   const [filters, setFilters] = useState<FiltersState>({ sort: "newest" });
   const [searchInput, setSearchInput] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (categories.length > 0) return;
     productService.categories().then(setCategories).catch(() => setCategories([]));
-  }, []);
+  }, [categories.length]);
 
   useEffect(() => {
     setSearchInput(searchQuery);
@@ -104,6 +118,10 @@ export default function ProductsPageClient() {
   }, [searchQuery, filters, page]);
 
   useEffect(() => {
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false;
+      return;
+    }
     load();
   }, [load]);
 

@@ -5,13 +5,14 @@ import { productService } from "@/lib/services/product.service";
 import { categoryService } from "@/lib/services/category.service";
 import type { Product, Category } from "@/types";
 
-export const revalidate = 0;
+export const revalidate = 60;
 
 async function getHomeData() {
+  const cache = { revalidate: 60 as const };
   try {
     const [{ data: products }, categories] = await Promise.all([
-      productService.list({ sort: "newest", page_size: 8 }),
-      categoryService.list(),
+      productService.list({ sort: "newest", page_size: 8 }, cache),
+      categoryService.list(cache),
     ]);
     return { products, categories };
   } catch {

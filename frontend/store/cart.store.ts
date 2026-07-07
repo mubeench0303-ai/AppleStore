@@ -18,6 +18,7 @@ interface CartState {
   openDrawer: () => void;
   closeDrawer: () => void;
   reset: () => void;
+  applyCart: (cart: Cart) => void;
 }
 
 function computeTotals(cart: Cart | null) {
@@ -75,5 +76,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   reset: () => {
     Cookies.remove("cart_count");
     set({ cart: null, itemCount: 0, subtotal: 0 });
+  },
+  applyCart: (cart) => {
+    syncCartCookie(cart);
+    set({ cart, ...computeTotals(cart) });
   },
 }));
