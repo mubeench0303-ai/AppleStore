@@ -216,6 +216,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	sameSite := http.SameSiteLaxMode
+	if h.IsProd {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    "",
@@ -223,7 +228,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   h.IsProd,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sameSite,
 	})
 	utils.Success(w, http.StatusOK, map[string]string{"message": "logged out"})
 }
@@ -243,6 +248,11 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) setAuthCookie(w http.ResponseWriter, token string) {
+	sameSite := http.SameSiteLaxMode
+	if h.IsProd {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    token,
@@ -250,6 +260,6 @@ func (h *AuthHandler) setAuthCookie(w http.ResponseWriter, token string) {
 		MaxAge:   int((24 * time.Hour).Seconds()),
 		HttpOnly: true,
 		Secure:   h.IsProd,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sameSite,
 	})
 }

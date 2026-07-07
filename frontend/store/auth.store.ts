@@ -4,7 +4,8 @@ import { create } from "zustand";
 import Cookies from "js-cookie";
 import type { User } from "@/types";
 import { authService } from "@/lib/services/auth.service";
-import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
+import { APIError } from "@/lib/api-client";
+import { clearAccessToken, hasAccessToken, setAccessToken } from "@/lib/auth-token";
 
 interface AuthState {
   user: User | null;
@@ -42,8 +43,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const { user, token } = await authService.login(email, password);
+      if (!token) {
+        throw new Error("Login succeeded but no session token was returned");
+      }
       setAccessToken(token);
-      get().setUser(user);
+      syncAuthCookie(user);
+      set({ user });
     } finally {
       set({ isLoading: false });
     }
@@ -63,8 +68,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const { user, token } = await authService.verifyEmail(email, code);
+      if (!token) {
+        throw new Error("Verification succeeded but no session token was returned");
+      }
       setAccessToken(token);
-      get().setUser(user);
+      syncAuthCookie(user);
+      set({ user });
     } finally {
       set({ isLoading: false });
     }
@@ -81,12 +90,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   hydrate: async () => {
+    if (!hasAccessToken()) {
+      set({ user: null, isHydrated: true });
+      return;
+    }
+
     try {
       const user = await authService.me();
-      get().setUser(user);
-    } catch {
-      clearAccessToken();
-      get().setUser(null);
+      syncAuthCookie(user);
+      set({ user });
+    } catch (err) {
+      if (err instanceof APIError && err.status === 401) {
+        clearAccessToken();
+        syncAuthCookie(null);
+        set({ user: null });
+      }
     } finally {
       set({ isHydrated: true });
     }

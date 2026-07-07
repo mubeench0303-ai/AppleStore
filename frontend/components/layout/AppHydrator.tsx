@@ -10,6 +10,7 @@ import { useCartStore } from "@/store/cart.store";
 export default function AppHydrator() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const user = useAuthStore((s) => s.user);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
   const fetchCart = useCartStore((s) => s.fetchCart);
   const resetCart = useCartStore((s) => s.reset);
 
@@ -19,13 +20,14 @@ export default function AppHydrator() {
   }, []);
 
   useEffect(() => {
+    if (!isHydrated) return;
     if (user) {
       fetchCart();
     } else {
       resetCart();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isHydrated]);
 
   return null;
 }
