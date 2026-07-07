@@ -56,7 +56,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   addItem: async (productId, quantity = 1) => {
     const cart = await cartService.addItem(productId, quantity);
     syncCartCookie(cart);
-    set({ cart, ...computeTotals(cart), isOpen: true });
+    set({ cart, ...computeTotals(cart) });
   },
 
   updateItem: async (productId, quantity) => {

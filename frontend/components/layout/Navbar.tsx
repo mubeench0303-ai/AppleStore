@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Search, User, Menu, X } from "lucide-react";
 import { useCartStore } from "@/store/cart.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useFlyToCart } from "@/components/motion/FlyToCartProvider";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/products", label: "Shop All" },
@@ -27,6 +29,16 @@ export default function Navbar() {
   const itemCount = useCartStore((s) => s.itemCount);
   const openDrawer = useCartStore((s) => s.openDrawer);
   const user = useAuthStore((s) => s.user);
+  const { registerCartTarget, cartBump } = useFlyToCart();
+  const cartBtnRef = useRef<HTMLButtonElement>(null);
+
+  const setCartButtonRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      cartBtnRef.current = node;
+      registerCartTarget(node);
+    },
+    [registerCartTarget]
+  );
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -50,23 +62,19 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-40 glass-nav transition-shadow ${
-        scrolled ? "shadow-soft border-b border-border/60" : "border-b border-transparent"
+      className={`sticky top-0 z-40 glass-nav transition-all duration-200 ${
+        scrolled ? "shadow-nav border-b border-border/60" : "border-b border-border/30"
       }`}
     >
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="flex h-14 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="font-heading text-[19px] font-semibold tracking-tight">
+      <div className="container-page">
+        <div className="flex h-[52px] sm:h-14 items-center justify-between">
+          <div className="flex items-center gap-6 lg:gap-8">
+            <Link href="/" className="font-heading text-[18px] sm:text-[19px] font-semibold tracking-tight hover:opacity-80 transition-opacity">
               Apple Store
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-5 lg:gap-6">
               {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-[13px] text-ink/80 hover:text-ink transition-colors"
-                >
+                <Link key={link.href} href={link.href} className="nav-link">
                   {link.label}
                 </Link>
               ))}
@@ -101,7 +109,7 @@ export default function Navbar() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search…"
                       aria-label="Search products"
-                      className="w-full border border-border rounded-full px-4 py-2 text-[13px] bg-white focus-ring"
+                      className="w-full border border-border rounded-full px-4 py-2 text-[13px] bg-card text-ink focus-ring"
                     />
                   </motion.form>
                 )}
@@ -119,6 +127,8 @@ export default function Navbar() {
               </button>
             </div>
 
+            <ThemeToggle />
+
             <Link
               href={user ? "/account" : "/login"}
               aria-label="Account"
@@ -127,7 +137,11 @@ export default function Navbar() {
               <User size={17} strokeWidth={1.75} />
             </Link>
             <motion.button
+              ref={setCartButtonRef}
+              data-cart-target
               whileTap={{ scale: 0.9 }}
+              animate={cartBump ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+              transition={{ duration: 0.35 }}
               onClick={openDrawer}
               aria-label="Open cart"
               className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-surface transition-colors focus-ring"
@@ -135,6 +149,7 @@ export default function Navbar() {
               <ShoppingBag size={17} strokeWidth={1.75} />
               {itemCount > 0 && (
                 <motion.span
+                  key={itemCount}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   className="absolute -top-0.5 -right-0.5 bg-accent text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center"

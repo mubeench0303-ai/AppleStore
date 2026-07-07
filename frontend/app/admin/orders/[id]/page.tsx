@@ -147,7 +147,7 @@ export default function AdminOrderDetailPage() {
         <h3 className="font-heading text-[15px] font-semibold mb-4">Order items</h3>
         <ul className="divide-y divide-border border border-border rounded-3xl overflow-hidden">
           {order.items?.map((item) => (
-            <li key={item.id} className="flex items-center gap-4 p-4 bg-white">
+            <li key={item.id} className="flex items-center gap-4 p-4 bg-card">
               <div className="relative h-14 w-14 rounded-xl bg-surface overflow-hidden shrink-0">
                 {item.product_image ? (
                   <Image src={item.product_image} alt={item.product_name_snapshot} fill className="object-cover" sizes="56px" />

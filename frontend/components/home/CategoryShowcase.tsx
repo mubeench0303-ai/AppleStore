@@ -15,9 +15,17 @@ const IMAGES: Record<string, string> = {
 };
 
 export default function CategoryShowcase({ categories }: { categories: Category[] }) {
+  if (categories.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="mx-auto max-w-7xl px-5 sm:px-8 py-16 sm:py-24">
-      <h2 className="font-heading text-2xl sm:text-3xl font-semibold tracking-tight mb-8">Shop by category</h2>
+    <section className="section-padding">
+      <div className="container-page">
+        <div className="mb-8 sm:mb-10">
+          <h2 className="font-heading text-2xl sm:text-3xl font-semibold tracking-tight">Shop by category</h2>
+          <p className="text-[14px] text-muted mt-2">Find the device that fits your workflow.</p>
+        </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         {categories.map((cat, i) => (
           <motion.div
@@ -47,6 +55,7 @@ export default function CategoryShowcase({ categories }: { categories: Category[
             </Link>
           </motion.div>
         ))}
+      </div>
       </div>
     </section>
   );

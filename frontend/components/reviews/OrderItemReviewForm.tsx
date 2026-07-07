@@ -64,7 +64,7 @@ export default function OrderItemReviewForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 rounded-2xl border border-border bg-white">
+    <form onSubmit={handleSubmit} className="mt-4 p-4 rounded-2xl border border-border bg-card">
       <p className="text-[13px] font-medium mb-3">Review {productName}</p>
 
       <div className="flex items-center gap-1 mb-3">

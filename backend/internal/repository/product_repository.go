@@ -98,6 +98,8 @@ func (r *ProductRepository) FindAll(f ProductFilter) ([]models.Product, int, err
 		orderBy = "p.price DESC"
 	case "newest":
 		orderBy = "p.created_at DESC"
+	case "popularity":
+		orderBy = "COALESCE(sold.total_sold, 0) DESC, p.created_at DESC"
 	}
 
 	if f.Page < 1 {
@@ -137,15 +139,15 @@ func (r *ProductRepository) FindAll(f ProductFilter) ([]models.Product, int, err
 }
 
 func (r *ProductRepository) FindBySlug(slug string) (*models.Product, error) {
-	row := r.DB.QueryRow(`
-		SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity, p.category_id,
-		       c.name, p.image_url, p.model_variant, p.is_active, p.created_at, p.updated_at
-		FROM products p JOIN categories c ON c.id = p.category_id
-		WHERE p.slug = ?`, slug)
+	row := r.DB.QueryRow(fmt.Sprintf(`
+		SELECT %s
+		FROM products p
+		JOIN categories c ON c.id = p.category_id
+		%s
+		WHERE p.slug = ?`, productSelectWithStats, productStatsJoins), slug)
 
-	var p models.Product
-	if err := row.Scan(&p.ID, &p.Name, &p.Slug, &p.Description, &p.Price, &p.StockQuantity,
-		&p.CategoryID, &p.CategoryName, &p.ImageURL, &p.ModelVariant, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	p, err := scanProductWithStats(row)
+	if err != nil {
 		return nil, err
 	}
 

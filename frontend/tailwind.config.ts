@@ -1,24 +1,23 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-  ],
+  darkMode: "class",
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "#FBFBFD",
-        surface: "#F5F5F7",
-        ink: "#1D1D1F",
-        muted: "#86868B",
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        card: "rgb(var(--color-card) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
         accent: {
           DEFAULT: "#0071E3",
           hover: "#0077ED",
         },
         success: "#1DB954",
         error: "#E8453C",
-        border: "#D2D2D7",
+        border: "rgb(var(--color-border) / <alpha-value>)",
         dark: "#000000",
         darksoft: "#1D1D1F",
       },
@@ -31,8 +30,9 @@ const config: Config = {
         "3xl": "1.5rem",
       },
       boxShadow: {
-        soft: "0 8px 30px rgba(0,0,0,0.06)",
-        card: "0 2px 20px rgba(0,0,0,0.04)",
+        soft: "var(--shadow-soft)",
+        card: "var(--shadow-card)",
+        nav: "var(--shadow-nav)",
       },
     },
   },

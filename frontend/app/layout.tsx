@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
+import TrustBar from "@/components/layout/TrustBar";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
 import ToastProvider from "@/components/ui/ToastProvider";
 import AppHydrator from "@/components/layout/AppHydrator";
+import FlyToCartProvider from "@/components/motion/FlyToCartProvider";
+import ScrollProgress from "@/components/motion/ScrollProgress";
+import ThemeProvider from "@/components/theme/ThemeProvider";
 
 const interTight = Inter_Tight({
   subsets: ["latin"],
@@ -29,14 +33,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${interTight.variable} ${inter.variable}`}>
+    <html lang="en" className={`${interTight.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-body bg-background text-ink antialiased min-h-screen flex flex-col">
-        <AppHydrator />
-        <Navbar />
-        <CartDrawer />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <ToastProvider />
+        <ThemeProvider>
+          <FlyToCartProvider>
+            <ScrollProgress />
+            <AppHydrator />
+            <TrustBar />
+            <Navbar />
+            <CartDrawer />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <ToastProvider />
+          </FlyToCartProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

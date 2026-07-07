@@ -5,6 +5,30 @@
 :root {
   --font-inter-tight: "Inter Tight", system-ui, sans-serif;
   --font-inter: "Inter", system-ui, sans-serif;
+
+  --color-background: 251 251 253;
+  --color-surface: 245 245 247;
+  --color-card: 255 255 255;
+  --color-ink: 29 29 31;
+  --color-muted: 134 134 139;
+  --color-border: 210 210 215;
+
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 2px 20px rgba(0, 0, 0, 0.04);
+  --shadow-nav: 0 1px 0 rgba(0, 0, 0, 0.04), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+  --color-background: 0 0 0;
+  --color-surface: 28 28 30;
+  --color-card: 44 44 46;
+  --color-ink: 245 245 247;
+  --color-muted: 152 152 157;
+  --color-border: 58 58 60;
+
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 2px 20px rgba(0, 0, 0, 0.35);
+  --shadow-nav: 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 html {
@@ -12,8 +36,7 @@ html {
 }
 
 body {
-  background-color: #FBFBFD;
-  color: #1D1D1F;
+  @apply bg-background text-ink;
 }
 
 ::selection {
@@ -22,13 +45,13 @@ body {
 }
 
 .glass-nav {
-  background-color: rgba(251, 251, 253, 0.72);
+  background-color: rgb(var(--color-background) / 0.72);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .dark-section {
-  background: linear-gradient(180deg, #000000 0%, #1D1D1F 100%);
+  background: linear-gradient(180deg, #000000 0%, #1d1d1f 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -46,6 +69,33 @@ body {
 .focus-ring:focus-visible {
   outline: 2px solid #0071E3;
   outline-offset: 2px;
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto max-w-7xl px-5 sm:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 sm:py-24;
+  }
+
+  .nav-link {
+    @apply text-[13px] text-ink/75 hover:text-ink transition-colors relative;
+  }
+
+  .nav-link::after {
+    content: "";
+    @apply absolute -bottom-0.5 left-0 h-px w-0 bg-ink transition-all duration-200;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  .checkout-input {
+    @apply w-full border border-border rounded-xl px-4 py-3 text-[14px] bg-card text-ink focus-ring;
+  }
 }
 
 /* Hide scrollbar for horizontal filter chips row while keeping scroll */

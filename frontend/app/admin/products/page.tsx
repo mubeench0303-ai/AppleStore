@@ -164,7 +164,7 @@ export default function AdminProductsPage() {
             >
               <form
                 onSubmit={handleSubmit}
-                className="bg-white rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-heading text-lg font-semibold">{editing ? "Edit product" : "New product"}</h3>

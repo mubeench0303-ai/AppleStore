@@ -2,18 +2,51 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Plus, Star } from "lucide-react";
 import type { Product } from "@/types";
 import { useCartStore } from "@/store/cart.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useFlyToCart } from "@/components/motion/FlyToCartProvider";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
+import usePrefersReducedMotion from "@/hooks/usePrefersReducedMotion";
+import { getProductBadges } from "@/lib/product-badges";
 
-export default function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export default function ProductCard({
+  product,
+  layoutMorph = false,
+}: {
+  product: Product;
+  index?: number;
+  layoutMorph?: boolean;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
+  const openDrawer = useCartStore((s) => s.openDrawer);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const { flyToCart } = useFlyToCart();
+  const reduced = usePrefersReducedMotion();
+
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [9, -9]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-9, 9]), { stiffness: 300, damping: 30 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (reduced || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    mx.set((e.clientX - rect.left) / rect.width - 0.5);
+    my.set((e.clientY - rect.top) / rect.height - 0.5);
+  }
+
+  function handleMouseLeave() {
+    mx.set(0);
+    my.set(0);
+  }
 
   async function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
@@ -24,52 +57,75 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
     }
     try {
       await addItem(product.id, 1);
+      if (imageRef.current && product.image_url && !reduced) {
+        await flyToCart(product.image_url, imageRef.current);
+      }
+      openDrawer();
       toast.success(`Added ${product.name}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't add to bag");
     }
   }
 
+  const badges = getProductBadges(product);
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
-      whileHover={{ y: -4 }}
+      ref={cardRef}
+      layout={layoutMorph}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={
+        reduced
+          ? undefined
+          : {
+              rotateX,
+              rotateY,
+              transformPerspective: 1000,
+            }
+      }
       className="group"
     >
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-square rounded-3xl bg-surface overflow-hidden mb-4">
+        <motion.div
+          ref={imageRef}
+          layoutId={`product-image-${product.id}`}
+          className="relative aspect-square rounded-3xl bg-surface overflow-hidden mb-4 shadow-card"
+        >
           {product.image_url && (
             <Image
               src={product.image_url}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 50vw, 25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover"
             />
           )}
-          {product.stock_quantity === 0 && (
-            <div className="absolute top-3 left-3 bg-ink/80 text-white text-[11px] px-2.5 py-1 rounded-full">
-              Out of stock
+          {badges.length > 0 && (
+            <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+              {badges.map((badge) => (
+                <span
+                  key={badge.label}
+                  className={`text-[10px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${badge.className}`}
+                >
+                  {badge.label}
+                </span>
+              ))}
             </div>
           )}
           <motion.button
             whileTap={{ scale: 0.85 }}
-            whileHover={{ scale: 1.08 }}
             onClick={handleAdd}
             disabled={product.stock_quantity === 0}
             aria-label={`Add ${product.name} to bag`}
-            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 z-10"
           >
             <Plus size={18} className="text-ink" />
           </motion.button>
-        </div>
+        </motion.div>
         <div className="px-1">
           <p className="text-[13px] text-muted">{product.category_name}</p>
           <h3 className="text-[15px] font-medium mt-0.5 leading-snug">{product.name}</h3>
-          <p className="text-[14px] text-ink/80 mt-1">${product.price.toLocaleString()}</p>
           {((product.review_count ?? 0) > 0 || (product.total_sold ?? 0) > 0) && (
             <p className="flex items-center gap-1.5 text-[12px] text-muted mt-1">
               {(product.review_count ?? 0) > 0 && (
@@ -82,6 +138,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
               {(product.total_sold ?? 0) > 0 && <span>{product.total_sold} sold</span>}
             </p>
           )}
+          <p className="text-[14px] text-ink/80 mt-1">${product.price.toLocaleString()}</p>
         </div>
       </Link>
     </motion.div>

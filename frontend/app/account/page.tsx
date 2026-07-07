@@ -76,7 +76,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-sm space-y-10">
+    <div className="max-w-lg space-y-10">
+      <div>
+        <h2 className="font-heading text-lg font-semibold">Profile</h2>
+        <p className="text-[13px] text-muted mt-1">Update your personal information.</p>
+      </div>
       <motion.form
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
