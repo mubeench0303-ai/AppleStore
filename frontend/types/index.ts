@@ -36,6 +36,9 @@ export interface Product {
   created_at: string;
   updated_at: string;
   images?: ProductImage[];
+  avg_rating?: number;
+  review_count?: number;
+  total_sold?: number;
 }
 
 export interface CartItem {

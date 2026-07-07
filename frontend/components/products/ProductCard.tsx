@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import type { Product } from "@/types";
 import { useCartStore } from "@/store/cart.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -70,6 +70,18 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
           <p className="text-[13px] text-muted">{product.category_name}</p>
           <h3 className="text-[15px] font-medium mt-0.5 leading-snug">{product.name}</h3>
           <p className="text-[14px] text-ink/80 mt-1">${product.price.toLocaleString()}</p>
+          {((product.review_count ?? 0) > 0 || (product.total_sold ?? 0) > 0) && (
+            <p className="flex items-center gap-1.5 text-[12px] text-muted mt-1">
+              {(product.review_count ?? 0) > 0 && (
+                <>
+                  <Star size={12} className="fill-accent text-accent shrink-0" aria-hidden />
+                  <span>{(product.avg_rating ?? 0).toFixed(1)}</span>
+                  <span>({String(product.review_count).padStart(2, "0")})</span>
+                </>
+              )}
+              {(product.total_sold ?? 0) > 0 && <span>{product.total_sold} sold</span>}
+            </p>
+          )}
         </div>
       </Link>
     </motion.div>

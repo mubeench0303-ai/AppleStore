@@ -16,6 +16,36 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{DB: db}
 }
 
+const productStatsJoins = `
+LEFT JOIN (
+	SELECT product_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+	FROM reviews GROUP BY product_id
+) rv ON rv.product_id = p.id
+LEFT JOIN (
+	SELECT oi.product_id, COALESCE(SUM(oi.quantity), 0) AS total_sold
+	FROM order_items oi
+	INNER JOIN orders o ON o.id = oi.order_id
+	WHERE o.status IN ('paid', 'shipped', 'delivered')
+	GROUP BY oi.product_id
+) sold ON sold.product_id = p.id`
+
+const productSelectWithStats = `
+	p.id, p.name, p.slug, p.description, p.price, p.stock_quantity, p.category_id,
+	c.name, p.image_url, p.model_variant, p.is_active, p.created_at, p.updated_at,
+	COALESCE(rv.avg_rating, 0), COALESCE(rv.review_count, 0), COALESCE(sold.total_sold, 0)`
+
+func scanProductWithStats(scanner interface {
+	Scan(dest ...interface{}) error
+}) (models.Product, error) {
+	var p models.Product
+	err := scanner.Scan(
+		&p.ID, &p.Name, &p.Slug, &p.Description, &p.Price, &p.StockQuantity,
+		&p.CategoryID, &p.CategoryName, &p.ImageURL, &p.ModelVariant, &p.IsActive, &p.CreatedAt, &p.UpdatedAt,
+		&p.AvgRating, &p.ReviewCount, &p.TotalSold,
+	)
+	return p, err
+}
+
 type ProductFilter struct {
 	Search     string
 	CategoryID uint
@@ -79,13 +109,13 @@ func (r *ProductRepository) FindAll(f ProductFilter) ([]models.Product, int, err
 	offset := (f.Page - 1) * f.PageSize
 
 	query := fmt.Sprintf(`
-		SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity, p.category_id,
-		       c.name, p.image_url, p.model_variant, p.is_active, p.created_at, p.updated_at
+		SELECT %s
 		FROM products p
 		JOIN categories c ON c.id = p.category_id
+		%s
 		WHERE %s
 		ORDER BY %s
-		LIMIT ? OFFSET ?`, whereClause, orderBy)
+		LIMIT ? OFFSET ?`, productSelectWithStats, productStatsJoins, whereClause, orderBy)
 
 	args = append(args, f.PageSize, offset)
 
@@ -97,9 +127,8 @@ func (r *ProductRepository) FindAll(f ProductFilter) ([]models.Product, int, err
 
 	var out []models.Product
 	for rows.Next() {
-		var p models.Product
-		if err := rows.Scan(&p.ID, &p.Name, &p.Slug, &p.Description, &p.Price, &p.StockQuantity,
-			&p.CategoryID, &p.CategoryName, &p.ImageURL, &p.ModelVariant, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		p, err := scanProductWithStats(rows)
+		if err != nil {
 			return nil, 0, err
 		}
 		out = append(out, p)
@@ -148,12 +177,13 @@ func (r *ProductRepository) FindByID(id uint) (*models.Product, error) {
 }
 
 func (r *ProductRepository) FindRelated(categoryID uint, excludeID uint, limit int) ([]models.Product, error) {
-	rows, err := r.DB.Query(`
-		SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity, p.category_id,
-		       c.name, p.image_url, p.model_variant, p.is_active, p.created_at, p.updated_at
-		FROM products p JOIN categories c ON c.id = p.category_id
+	rows, err := r.DB.Query(fmt.Sprintf(`
+		SELECT %s
+		FROM products p
+		JOIN categories c ON c.id = p.category_id
+		%s
 		WHERE p.category_id = ? AND p.id != ? AND p.is_active = TRUE
-		LIMIT ?`, categoryID, excludeID, limit)
+		LIMIT ?`, productSelectWithStats, productStatsJoins), categoryID, excludeID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +191,8 @@ func (r *ProductRepository) FindRelated(categoryID uint, excludeID uint, limit i
 
 	var out []models.Product
 	for rows.Next() {
-		var p models.Product
-		if err := rows.Scan(&p.ID, &p.Name, &p.Slug, &p.Description, &p.Price, &p.StockQuantity,
-			&p.CategoryID, &p.CategoryName, &p.ImageURL, &p.ModelVariant, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		p, err := scanProductWithStats(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, p)

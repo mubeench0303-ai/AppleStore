@@ -51,6 +51,9 @@ type Product struct {
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	Images        []ProductImage `json:"images,omitempty"`
+	AvgRating     float64        `json:"avg_rating,omitempty"`
+	ReviewCount   int            `json:"review_count,omitempty"`
+	TotalSold     int            `json:"total_sold,omitempty"`
 }
 
 type ProductImage struct {
