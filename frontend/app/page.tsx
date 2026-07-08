@@ -11,30 +11,52 @@ import type { Product, Category } from "@/types";
 
 export const revalidate = 60;
 
+async function getHeroProducts(categories: Category[], cache: { revalidate: 60 }) {
+  if (categories.length === 0) return [] as Product[];
+
+  const picks = await Promise.all(
+    categories.map(async (cat) => {
+      try {
+        const { data } = await productService.list(
+          { category_id: cat.id, sort: "newest", page_size: 1 },
+          cache
+        );
+        return data[0] ?? null;
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return picks.filter((p): p is Product => p !== null);
+}
+
 async function getHomeData() {
   const cache = { revalidate: 60 as const };
   try {
-    const [{ data: newArrivals }, { data: bestSellers }, categories] = await Promise.all([
+    const categories = await categoryService.list(cache);
+    const [{ data: newArrivals }, { data: bestSellers }, heroProducts] = await Promise.all([
       productService.list({ sort: "newest", page_size: 8 }, cache),
       productService.list({ sort: "popularity", page_size: 6 }, cache),
-      categoryService.list(cache),
+      getHeroProducts(categories, cache),
     ]);
-    return { newArrivals, bestSellers, categories };
+    return { newArrivals, bestSellers, categories, heroProducts };
   } catch {
     return {
       newArrivals: [] as Product[],
       bestSellers: [] as Product[],
       categories: [] as Category[],
+      heroProducts: [] as Product[],
     };
   }
 }
 
 export default async function HomePage() {
-  const { newArrivals, bestSellers, categories } = await getHomeData();
+  const { newArrivals, bestSellers, categories, heroProducts } = await getHomeData();
 
   return (
     <div>
-      <Hero />
+      <Hero products={heroProducts} />
       <TrustFeatures />
       <CategoryShowcase categories={categories} />
 
