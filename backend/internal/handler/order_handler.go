@@ -75,6 +75,9 @@ func (h *OrderHandler) MyOrders(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, http.StatusInternalServerError, "failed to load orders")
 		return
 	}
+	if orders == nil {
+		orders = []models.Order{}
+	}
 	utils.Success(w, http.StatusOK, orders)
 }
 
