@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
 	"apple-store-backend/internal/config"
@@ -62,7 +63,22 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 	auth := middleware.Auth(cfg.JWTSecret)
 
 	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		w.Header().Set("Content-Type", "application/json")
+
+		if err := db.Ping(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"status":   "error",
+				"database": "unavailable",
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status":   "ok",
+			"database": "connected",
+		})
 	})
 
 	r.Route("/api/v1", func(r chi.Router) {
