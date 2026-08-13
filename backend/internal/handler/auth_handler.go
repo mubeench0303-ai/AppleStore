@@ -66,18 +66,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if token != "" {
-		h.setAuthCookie(w, token)
-	}
-	payload := map[string]interface{}{
+	h.setAuthCookie(w, token)
+	utils.Success(w, http.StatusCreated, map[string]interface{}{
 		"message": message,
 		"email":   user.Email,
 		"user":    user,
-	}
-	if token != "" {
-		payload["token"] = token
-	}
-	utils.Success(w, http.StatusCreated, payload)
+		"token":   token,
+	})
 }
 
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {

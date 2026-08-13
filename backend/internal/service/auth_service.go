@@ -75,31 +75,42 @@ func (s *AuthService) Register(name, email, password string) (*models.User, stri
 		if existing.IsVerified {
 			return nil, "", "", ErrEmailTaken
 		}
+		// Email verification temporarily disabled — activate existing unverified account.
 		if err := s.Users.UpdateProfile(existing.ID, name); err != nil {
 			return nil, "", "", err
 		}
 		if err := s.Users.UpdatePassword(existing.ID, hash); err != nil {
 			return nil, "", "", err
 		}
-		existing.Name = name
-		if err := s.sendVerificationCode(existing); err != nil {
-			return nil, "", "", fmt.Errorf("failed to send verification email: %w", err)
+		if err := s.Users.SetVerified(existing.ID); err != nil {
+			return nil, "", "", err
 		}
-		return existing, "", "Check your email for a verification code", nil
+		existing.Name = name
+		existing.IsVerified = true
+		token, err := s.issueToken(existing)
+		if err != nil {
+			return nil, "", "", err
+		}
+		return existing, token, "Account created successfully", nil
 	}
 
-	u := &models.User{Name: name, Email: email, PasswordHash: hash, Role: "user", IsVerified: false}
+	u := &models.User{Name: name, Email: email, PasswordHash: hash, Role: "user", IsVerified: true}
 	id, err := s.Users.Create(u)
 	if err != nil {
 		return nil, "", "", err
 	}
 	u.ID = id
 
-	if err := s.sendVerificationCode(u); err != nil {
-		return nil, "", "", fmt.Errorf("failed to send verification email: %w", err)
+	// Email verification temporarily disabled — accounts are active immediately.
+	// msg := "Check your email for a verification code"
+	// if err := s.sendVerificationCode(u); err != nil { ... }
+
+	token, err := s.issueToken(u)
+	if err != nil {
+		return nil, "", "", err
 	}
 
-	return u, "", "Check your email for a verification code", nil
+	return u, token, "Account created successfully", nil
 }
 
 func (s *AuthService) VerifyEmail(email, code string) (*models.User, string, error) {
@@ -171,9 +182,10 @@ func (s *AuthService) Login(email, password string) (*models.User, string, error
 	if !utils.CheckPassword(password, u.PasswordHash) {
 		return nil, "", ErrInvalidCreds
 	}
-	if !u.IsVerified {
-		return nil, "", ErrNotVerified
-	}
+	// Email verification temporarily disabled.
+	// if !u.IsVerified {
+	// 	return nil, "", ErrNotVerified
+	// }
 	token, err := s.issueToken(u)
 	if err != nil {
 		return nil, "", err
