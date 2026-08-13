@@ -42,7 +42,7 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 	passwordResetRepo := repository.NewPasswordResetRepository(db)
 
 	// Services
-	emailService := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom, cfg.BrevoAPIKey)
+	emailService := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom, cfg.IXmailerAPIKey)
 	authService := service.NewAuthService(userRepo, verificationRepo, passwordResetRepo, emailService, cfg.JWTSecret, cfg.JWTExpiryHours)
 	productService := service.NewProductService(productRepo, categoryRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)
@@ -86,12 +86,11 @@ func New(db *sql.DB, cfg *config.Config) *chi.Mux {
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/logout", authHandler.Logout)
-		// Email verification & password reset disabled while Brevo delivery is unavailable.
-		// r.Post("/auth/verify-email", authHandler.VerifyEmail)
-		// r.Post("/auth/resend-code", authHandler.ResendCode)
-		// r.Post("/auth/forgot-password", authHandler.ForgotPassword)
-		// r.Post("/auth/verify-reset-code", authHandler.VerifyResetCode)
-		// r.Post("/auth/reset-password", authHandler.ResetPassword)
+		r.Post("/auth/verify-email", authHandler.VerifyEmail)
+		r.Post("/auth/resend-code", authHandler.ResendCode)
+		r.Post("/auth/forgot-password", authHandler.ForgotPassword)
+		r.Post("/auth/verify-reset-code", authHandler.VerifyResetCode)
+		r.Post("/auth/reset-password", authHandler.ResetPassword)
 
 		// Public catalog
 		r.Get("/products", productHandler.List)

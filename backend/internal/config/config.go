@@ -25,7 +25,7 @@ type Config struct {
 	SMTPUsername        string
 	SMTPPassword        string
 	SMTPFrom            string
-	BrevoAPIKey         string
+	IXmailerAPIKey      string
 }
 
 // Load reads environment variables (via .env if present) into a Config struct.
@@ -41,7 +41,10 @@ func Load() *Config {
 	if smtpUser == "" {
 		smtpUser = getEnv("SMTP_EMAIL", "")
 	}
-	smtpFrom := getEnv("SMTP_FROM", "")
+	smtpFrom := getEnv("IXMAILER_FROM", "")
+	if smtpFrom == "" {
+		smtpFrom = getEnv("SMTP_FROM", "")
+	}
 	if smtpFrom == "" {
 		smtpFrom = smtpUser
 	}
@@ -68,7 +71,7 @@ func Load() *Config {
 		SMTPUsername:        smtpUser,
 		SMTPPassword:        getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:            smtpFrom,
-		BrevoAPIKey:         getEnv("BREVO_API_KEY", ""),
+		IXmailerAPIKey:      getEnv("IXMAILER_API_KEY", ""),
 	}
 }
 

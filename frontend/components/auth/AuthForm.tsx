@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/auth.store";
+import { APIError } from "@/lib/api-client";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [name, setName] = useState("");
@@ -22,7 +23,11 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   function validate() {
     const next: Record<string, string> = {};
     if (mode === "register" && name.trim().length < 2) next.name = "Enter your full name";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = "Enter a valid email address";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      next.email = "Enter a valid email address";
+    } else if (mode === "register" && !email.trim().toLowerCase().endsWith("@gmail.com")) {
+      next.email = "Use a Gmail address (@gmail.com)";
+    }
     if (password.length < 8) next.password = "Password must be at least 8 characters";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -38,11 +43,16 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         toast.success("Welcome back");
         router.push(redirect);
       } else {
-        await register(name, email, password);
-        toast.success("Account created — welcome!");
-        router.push(redirect);
+        const res = await register(name, email, password);
+        toast.success(res.message);
+        router.push(`/verify-email?email=${encodeURIComponent(res.email)}`);
       }
     } catch (err) {
+      if (mode === "login" && err instanceof APIError && err.status === 403) {
+        toast.error("Please verify your email first");
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -73,13 +83,17 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
             />
           </Field>
         )}
-        <Field label="Email" error={errors.email}>
+        <Field
+          label="Email"
+          error={errors.email}
+          hint={mode === "register" ? "Use only a Gmail account — codes are sent to @gmail.com addresses." : undefined}
+        >
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-border rounded-xl px-4 py-3 text-[14px] focus-ring"
-            placeholder="you@example.com"
+            placeholder={mode === "register" ? "you@gmail.com" : "you@example.com"}
           />
         </Field>
         <Field label="Password" error={errors.password}>
@@ -91,6 +105,14 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
             placeholder="••••••••"
           />
         </Field>
+
+        {mode === "login" && (
+          <p className="text-right">
+            <Link href="/forgot-password" className="text-[13px] text-accent font-medium hover:underline">
+              Forgot password?
+            </Link>
+          </p>
+        )}
 
         <motion.button
           whileTap={{ scale: 0.98 }}
@@ -123,12 +145,26 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="text-[13px] text-ink/70 mb-1.5 block">{label}</span>
       {children}
-      {error && <span className="text-error text-[12px] mt-1 block">{error}</span>}
+      {error ? (
+        <span className="text-error text-[12px] mt-1 block">{error}</span>
+      ) : hint ? (
+        <span className="text-muted text-[12px] mt-1.5 block">{hint}</span>
+      ) : null}
     </label>
   );
 }
